@@ -1,5 +1,7 @@
+import os, logging
 import MySQLdb
 from MySQLdb import Error
+from datetime import datetime
 
 
 class MySQLDatabase:
@@ -10,6 +12,7 @@ class MySQLDatabase:
         user="user",
         password="password",
         port=3307,
+        debug=False,
     ):
         """Initialize the MySQLDatabase class with the connection parameters"""
         self.host = host
@@ -17,7 +20,25 @@ class MySQLDatabase:
         self.user = user
         self.password = password
         self.port = port
+        self.debug = debug
         self.connection = None
+
+        # Get the current user's home directory and generate a timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_directory = f"/home/resume/log/{user}"
+
+        if not os.path.exists(log_directory):
+            os.makedirs(log_directory)
+
+        log_file = os.path.join(log_directory, f"{timestamp}.log")
+
+        # Set up logging to file and stream
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+        )
+        self.logger = logging.getLogger()
 
     def create_connection(self):
         """Create and return a MySQL database connection"""
@@ -29,18 +50,18 @@ class MySQLDatabase:
                 password=self.password,
                 port=self.port,
             )
-            print(
+            self.logger.info(
                 f"Successfully connected to the database {self.database} on port {self.port}"
             )
         except Error as e:
-            print(f"Error: {e}")
+            self.logger.error(e)
             self.connection = None
         return self.connection
 
     def insert_data(self, table, columns, data):
         """Insert data into the specified table in MySQL"""
         if not self.connection:
-            print("No active database connection.")
+            self.logger.error("No active database connection.")
             return
 
         try:
@@ -51,25 +72,29 @@ class MySQLDatabase:
             )
             cursor.executemany(insert_query, data)
             self.connection.commit()
-            print(f"{cursor.rowcount} rows inserted into {table}.")
+            self.logger.info(f"{cursor.rowcount} rows inserted into {table}.")
         except Error as e:
-            print(f"Error: {e}")
+            self.logger.error(e)
         finally:
             cursor.close()
 
     def select_data(self, query):
         """Select data using a custom query and return the result"""
         if not self.connection:
-            print("No active database connection.")
+            self.logger.error("No active database connection.")
             return None
 
         try:
             cursor = self.connection.cursor()
             cursor.execute(query)
             result = cursor.fetchall()
+            self.logger.info(f"Query executed successfully: {query}")
+            if self.debug:
+                self.logger.debug(f"Query result: {result}")
             return result
         except Error as e:
-            print(f"Error: {e}")
+            self.logger.error(f"Failed to execute query: {query}")
+            self.logger.error(e)
             return None
         finally:
             cursor.close()
@@ -78,7 +103,7 @@ class MySQLDatabase:
         """Close the MySQL connection"""
         if self.connection:
             self.connection.close()
-            print("MySQL connection closed.")
+            self.logger.info("MySQL connection closed.")
 
 
 if __name__ == "__main__":
@@ -101,8 +126,7 @@ if __name__ == "__main__":
 
     # Select data
     query = "SELECT * FROM test"
-    results = db.select_data(query)
-    print(results)
+    db.select_data(query)
 
     # Close connection
     db.close_connection()
