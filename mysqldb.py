@@ -7,12 +7,12 @@ from datetime import datetime
 class MySQLDatabase:
     def __init__(
         self,
-        host="127.0.0.1",
-        database="RESUME",
-        user="user",
-        password="password",
-        port=3307,
-        debug=False,
+        host: str = "127.0.0.1",
+        database: str = "RESUME",
+        user: str = "testuser",
+        password: str = "123456",
+        port: int = 3307,
+        debug: bool = False,
     ):
         """Initialize the MySQLDatabase class with the connection parameters"""
         self.host = host
@@ -58,7 +58,7 @@ class MySQLDatabase:
             self.connection = None
         return self.connection
 
-    def insert_data(self, table, columns, data):
+    def insert_data(self, table: str, columns: list, data: list[tuple]):
         """Insert data into the specified table in MySQL"""
         if not self.connection:
             self.logger.error("No active database connection.")
@@ -78,7 +78,7 @@ class MySQLDatabase:
         finally:
             cursor.close()
 
-    def select_data(self, query):
+    def select_data(self, query: str):
         """Select data using a custom query and return the result"""
         if not self.connection:
             self.logger.error("No active database connection.")
@@ -119,14 +119,15 @@ if __name__ == "__main__":
     # Create connection
     connection = db.create_connection()
 
-    # Insert data
-    data_to_insert = [("value1", "value2"), ("value3", "value4")]
-    columns = ["column1", "column2"]
-    db.insert_data("test", columns, data_to_insert)
+    if connection:
+        # Insert data
+        data_to_insert = [("value1", "value2"), ("value3", "value4")]
+        columns = ["column1", "column2"]
+        db.insert_data("test", columns, data_to_insert)
 
-    # Select data
-    query = "SELECT * FROM test"
-    db.select_data(query)
+        # Select data
+        query = "SELECT * FROM test"
+        db.select_data(query)
 
-    # Close connection
-    db.close_connection()
+        # Close connection
+        db.close_connection()
