@@ -34,7 +34,7 @@ class MySQLDatabase:
 
         # Set up logging to file and stream
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.INFO if not self.debug else logging.DEBUG,
             format="%(asctime)s - %(levelname)s - %(message)s",
             handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
         )
@@ -79,7 +79,9 @@ class MySQLDatabase:
             cursor.close()
 
     def select_data(self, query: str):
-        """Select data using a custom query and return the result"""
+        """
+        Select data using a custom query and return the result
+        """
         if not self.connection:
             self.logger.error("No active database connection.")
             return None
@@ -89,8 +91,7 @@ class MySQLDatabase:
             cursor.execute(query)
             result = cursor.fetchall()
             self.logger.info(f"Query executed successfully: {query}")
-            if self.debug:
-                self.logger.debug(f"Query result: {result}")
+            self.logger.debug(f"Query result: {result}")
             return result
         except Error as e:
             self.logger.error(f"Failed to execute query: {query}")
@@ -114,6 +115,7 @@ if __name__ == "__main__":
         database="RESUME",
         host="127.0.0.1",
         port=3307,
+        debug=True,
     )
 
     # Create connection
