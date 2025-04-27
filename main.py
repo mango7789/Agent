@@ -47,7 +47,9 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up resources when the app shuts down."""
-    raise NotImplementedError()
+    tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+    for task in tasks:
+        task.cancel()
 
 
 ###########################################################
@@ -68,7 +70,10 @@ async def scraper_scheduler():
                 nsync_redis.incr(SCRAPER_RUNNING_TASKS_KEY)
                 scraper_queue.enqueue(run_scraper, param1, param2, job_id)
                 logging.info(f"Scheduled pending task {job_id}")
+
         await asyncio.sleep(10)
+        if asyncio.current_task().cancelled():
+            break
 
 
 def run_scraper(param1: str, param2: str, job_id: str):
@@ -86,6 +91,7 @@ def run_scraper(param1: str, param2: str, job_id: str):
             )
         process.wait()
 
+        # NOTE: The log file is processed after the termination of scraper process
         with open(log_file, "r") as log:
             batch = []
             for line in log:
@@ -151,7 +157,7 @@ async def scraper_status(job_id: str):
 async def detect_new_message():
     """Simulate detecting new messages in a loop."""
     while True:
-        await asyncio.sleep(3)
+        await asyncio.sleep(10)
         user_id = "user123"
         message = "Hello, this is a new message!"
         yield user_id, message
@@ -159,7 +165,8 @@ async def detect_new_message():
 
 async def message_monitor():
     """
-    Background worker that monitors and detects new messages from an external source."""
+    Background worker that monitors and detects new messages from an external source.
+    """
     logging.info("Message monitor started...")
     while True:
         user_id, message = await detect_new_message()
@@ -168,7 +175,9 @@ async def message_monitor():
         await async_redis.rpush("message_queue", f"{user_id}|||{message}")
         logging.info(f"Message pushed to Redis for user {user_id}: {message}")
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(10)
+        if asyncio.current_task().cancelled():
+            break
 
 
 # TODO: This is a mock function of generating response for given message
@@ -201,6 +210,10 @@ async def process_message():
 
             await async_redis.rpush(f"user:{user_id}:responses", response)
             logging.info(f"Response generated and saved for user {user_id}: {response}")
+
+        await asyncio.sleep(1)
+        if asyncio.current_task().cancelled():
+            break
 
 
 ###########################################################
