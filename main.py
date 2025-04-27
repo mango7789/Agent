@@ -1,18 +1,17 @@
-import uuid
-import json
-import asyncio
-import logging
-import subprocess
+import os, uuid, asyncio, logging
 import uvicorn
+from pydantic import BaseModel
 from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-from utils.params import *
-from utils.database import MySQLDatabase
+from src.params import *
+from src.logger import setup_logger
+from src.database import MySQLDatabase
+from src.scraper import run_scraper
 
-app = FastAPI()
 
 # Redis connections
 nsync_redis = Redis(host="localhost", port=6379, db=0, decode_responses=True)
@@ -22,9 +21,7 @@ async_redis = AsyncRedis(host="localhost", port=6379, db=0, decode_responses=Tru
 scraper_queue = Queue(connection=nsync_redis)
 
 # Logger setup
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+setup_logger()
 
 # Database connection
 mysql_db = MySQLDatabase()
@@ -36,25 +33,37 @@ mysql_db = MySQLDatabase()
 # TODO: Establish a session with the website
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize background tasks when the app starts."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown events."""
+
+    log_dir = "./logs/scraper/"
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Create background tasks
     asyncio.create_task(scraper_scheduler())
-    asyncio.create_task(message_monitor())
-    asyncio.create_task(process_message())
+    # asyncio.create_task(message_monitor())
+    # asyncio.create_task(process_message())
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources when the app shuts down."""
+    # Clean up resources
     tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
     for task in tasks:
         task.cancel()
 
 
+app = FastAPI(lifespan=lifespan)
+
+
 ###########################################################
 #                       Scraper                           #
 ###########################################################
+
+
+class ScraperParams(BaseModel):
+    param1: str
+    param2: str
 
 
 async def scraper_scheduler():
@@ -76,62 +85,19 @@ async def scraper_scheduler():
             break
 
 
-def run_scraper(param1: str, param2: str, job_id: str):
-    """Run the scraper subprocess."""
-    nsync_redis.set(job_id, "Running")
-    try:
-        # Stream the output to log
-        log_file = f"../logs/scraper/{job_id}.log"
-        with open(log_file, "w") as log:
-            process = subprocess.Popen(
-                f"python run_scraper.py {param1} {param2}",
-                shell=True,
-                stdout=log,
-                stderr=subprocess.PIPE,
-            )
-        process.wait()
-
-        # NOTE: The log file is processed after the termination of scraper process
-        with open(log_file, "r") as log:
-            batch = []
-            for line in log:
-                try:
-                    record = json.loads(line)
-                    batch.append(record)
-
-                    if len(batch) >= BATCH_SIZE:
-                        mysql_db.insert_data_batch(batch)
-                        logging.info(
-                            f"[{job_id}]: Inserted a batch of {BATCH_SIZE} records into the database."
-                        )
-                        batch.clear()
-
-                except json.JSONDecodeError as e:
-                    logging.error(f"[{job_id}]: Failed to decode line as JSON: {line}")
-
-            if batch:
-                mysql_db.insert_data_batch(batch)
-                logging.info(
-                    f"[{job_id}]: Inserted the last batch of {len(batch)} records into the database."
-                )
-
-        nsync_redis.set(job_id, "Finished")
-        logging.info(f"[{job_id}]: Scraper task completed successfully.")
-
-    except subprocess.CalledProcessError as e:
-        nsync_redis.set(job_id, f"Failed: {str(e)}")
-        logging.error(f"[{job_id}]: Scraper task failed: {e}")
-
-    finally:
-        nsync_redis.decr(SCRAPER_RUNNING_TASKS_KEY)
-
-
 @app.post("/scraper")
-async def scraper(param1: str, param2: str):
+async def scraper(scraper_params: ScraperParams):
     """Submit a new scraper task."""
     job_id = str(uuid.uuid4())
     nsync_redis.set(job_id, "Pending")
-    nsync_redis.rpush(SCRAPER_PENDING_TASKS_KEY, f"{param1},{param2},{job_id}")
+    nsync_redis.rpush(
+        SCRAPER_PENDING_TASKS_KEY,
+        f"{scraper_params.param1},{scraper_params.param2},{job_id}",
+    )
+
+    logging.info(
+        f"[{job_id}] enqueued with params {scraper_params.param1}, {scraper_params.param2}"
+    )
 
     return {
         "message": "Task is queued and will start automatically when possible.",
@@ -168,8 +134,7 @@ async def message_monitor():
     Background worker that monitors and detects new messages from an external source.
     """
     logging.info("Message monitor started...")
-    while True:
-        user_id, message = await detect_new_message()
+    async for user_id, message in detect_new_message():
         logging.info(f"New message detected from user {user_id}: {message}")
 
         await async_redis.rpush("message_queue", f"{user_id}|||{message}")
