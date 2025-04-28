@@ -10,7 +10,7 @@ mysql_db = MySQLDatabase()
 
 def run_scraper(param1: str, param2: str, job_id: str):
     """Run the scraper subprocess."""
-    nsync_redis.set(job_id, "Running")
+    nsync_redis.set(job_id, "Scraping")
     try:
         # Stream the output to log
         log_file = f"{SCRAPER_LOG_DIR}/{job_id}.log"
@@ -23,6 +23,7 @@ def run_scraper(param1: str, param2: str, job_id: str):
             )
         process.wait()
 
+        nsync_redis.set(job_id, "Committing")
         # NOTE: The log file is processed after the termination of scraper process
         with open(log_file, "r") as log:
             batch = []

@@ -2,11 +2,12 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
-from .params import APP_LOG_DIR, SCRAPER_LOG_DIR
+from .params import RQ_LOG_DIR, APP_LOG_DIR, SCRAPER_LOG_DIR
 
 
 def make_log_dir():
     """Ensure the log directories exist."""
+    os.makedirs(RQ_LOG_DIR, exist_ok=True)
     os.makedirs(APP_LOG_DIR, exist_ok=True)
     os.makedirs(SCRAPER_LOG_DIR, exist_ok=True)
 
@@ -42,9 +43,21 @@ LOGGING_CONFIG = {
         "level": "INFO",
     },
     "loggers": {
-        "uvicorn": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "uvicorn.error": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "uvicorn.access": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "uvicorn": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 

@@ -1,15 +1,30 @@
 from typing import Final
 
 ###########################################################
+#                    Infrastructure                       #
+###########################################################
+APP_HOST: Final = "127.0.0.1"
+APP_PORT: Final = 8000
+
+REDIS_HOST: Final = "localhost"
+REDIS_POST: Final = 6379
+
+MYSQL_HOST: Final = "127.0.0.1"
+MYSQL_POST: Final = 3307
+
+
+###########################################################
 #                         App                             #
 ###########################################################
+RQ_LOG_DIR: Final = "logs/rq"
 APP_LOG_DIR: Final = "logs/app"
-RQ_LOG_FILE: Final = "logs/rq/worker.log"
+
 
 ###########################################################
 #                       Scraper                           #
 ###########################################################
 # Redis keys for tracking scraper tasks
+SCRAPER_QUEUE_KEY: Final = "scraper_queue"
 SCRAPER_RUNNING_TASKS_KEY: Final = "running_scrapers"
 SCRAPER_PENDING_TASKS_KEY: Final = "pending_scrapers"
 
@@ -26,4 +41,4 @@ SCRAPER_LOG_DIR: Final = "logs/scraper"
 #                     Message Relay                       #
 ###########################################################
 # Redis keys for tracking messages
-MESSAGE_QUEUE_KEY = "message_queue"
+MESSAGE_QUEUE_KEY: Final = "message_queue"

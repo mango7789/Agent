@@ -1,6 +1,5 @@
 import os, uuid, asyncio, logging
-import uvicorn
-from pydantic import BaseModel
+import httpx, uvicorn
 from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
@@ -9,17 +8,22 @@ from contextlib import asynccontextmanager
 
 from src.params import *
 from src.logger import setup_logger, LOGGING_CONFIG
+from src.models import ScraperParams, MatcherParams
 from src.database import MySQLDatabase
 from src.worker import start_rq_worker
 from src.scraper import run_scraper
 
 
+###########################################################
+#                   Initialization                        #
+###########################################################
+
 # Redis connections
-nsync_redis = Redis(host="localhost", port=6379, db=0, decode_responses=True)
-async_redis = AsyncRedis(host="localhost", port=6379, db=0, decode_responses=True)
+nsync_redis = Redis(host=REDIS_HOST, port=REDIS_POST, decode_responses=True)
+async_redis = AsyncRedis(host=REDIS_HOST, port=REDIS_POST, decode_responses=True)
 
 # RQ Queue
-scraper_queue = Queue(connection=nsync_redis)
+scraper_queue = Queue(SCRAPER_QUEUE_KEY, connection=nsync_redis)
 
 # Logger setup
 setup_logger()
@@ -28,9 +32,6 @@ logger = logging.getLogger(__name__)
 # Database connection
 mysql_db = MySQLDatabase()
 
-###########################################################
-#                   Initialization                        #
-###########################################################
 
 # TODO: Establish a session with the website
 
@@ -58,11 +59,6 @@ app = FastAPI(lifespan=lifespan)
 ###########################################################
 #                       Scraper                           #
 ###########################################################
-
-
-class ScraperParams(BaseModel):
-    param1: str
-    param2: str
 
 
 async def scraper_scheduler():
@@ -118,14 +114,27 @@ async def scraper_status(job_id: str):
 ###########################################################
 
 
-# TODO: This is a mock function of detecting new message from website
+# TODO: This is a mock function of checking new message from website
+async def check_new_messages():
+    """
+    Check if there are any new messages. Return a list of (user_id, message) pairs.
+    You can use the provided API of the website if available.
+    """
+    new_messages = [
+        ("user123", "Hello from user123!"),
+        ("user456", "Hi, this is user456."),
+    ]
+    return new_messages
+
+
 async def detect_new_message():
     """Simulate detecting new messages in a loop."""
     while True:
         await asyncio.sleep(10)
-        user_id = "user123"
-        message = "Hello, this is a new message!"
-        yield user_id, message
+        results = await check_new_messages()
+        if results:
+            for user_id, message in results:
+                yield user_id, message
 
 
 async def message_monitor():
@@ -139,16 +148,27 @@ async def message_monitor():
         await async_redis.rpush(MESSAGE_QUEUE_KEY, f"{user_id}|||{message}")
         logger.info(f"Message pushed to Redis for user {user_id}: {message}")
 
-        await asyncio.sleep(10)
         if asyncio.current_task().cancelled():
             break
 
 
 # TODO: This is a mock function of generating response for given message
+@app.post("/llm")
+async def llm(payload: dict):
+    """This endpoint generates a response."""
+    message = payload["message"]
+    return {"response": f"Echo: {message}"}
+
+
 async def generate_response(message: str) -> str:
     """Simulate generating a response based on the user's message."""
-    await asyncio.sleep(1)
-    return f"Echo: {message}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"http://{APP_HOST}:{APP_PORT}/llm", json={"message": message}
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["response"]
 
 
 # TODO: This is a mock function of sending response to the given user
@@ -160,7 +180,7 @@ async def send_response(user_id: str, response: str):
 
 async def process_message():
     """Background worker that listens for new messages and processes them."""
-    logger.info("Relay worker started...")
+    logger.info("Message worker started...")
     while True:
         data = await async_redis.blpop(MESSAGE_QUEUE_KEY, timeout=0)
         if data:
@@ -185,5 +205,10 @@ async def process_message():
 ###########################################################
 
 
+@app.post("matcher")
+async def matcher(matcher_params: MatcherParams):
+    pass
+
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=LOGGING_CONFIG)
+    uvicorn.run(app, host=APP_HOST, port=APP_PORT, log_config=LOGGING_CONFIG)
