@@ -1,4 +1,5 @@
 import json
+import logging
 import subprocess
 from redis import Redis
 from .database import MySQLDatabase

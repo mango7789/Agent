@@ -1,8 +1,8 @@
 import os, logging
 import MySQLdb
 from MySQLdb import Error
-from datetime import datetime
 
+logger = logging.getLogger(__name__)
 
 class MySQLDatabase:
     def __init__(
@@ -23,23 +23,6 @@ class MySQLDatabase:
         self.debug = debug
         self.connection = None
 
-        # Get the current user's home directory and generate a timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        log_directory = f"/home/resume/log/{user}"
-
-        if not os.path.exists(log_directory):
-            os.makedirs(log_directory)
-
-        log_file = os.path.join(log_directory, f"{timestamp}.log")
-
-        # Set up logging to file and stream
-        logging.basicConfig(
-            level=logging.INFO if not self.debug else logging.DEBUG,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
-        )
-        self.logger = logging.getLogger()
-
     def create_connection(self):
         """Create and return a MySQL database connection"""
         try:
@@ -50,18 +33,18 @@ class MySQLDatabase:
                 password=self.password,
                 port=self.port,
             )
-            self.logger.info(
+            logger.info(
                 f"Successfully connected to the database {self.database} on port {self.port}"
             )
         except Error as e:
-            self.logger.error(e)
+            logger.error(e)
             self.connection = None
         return self.connection
 
     def insert_data(self, table: str, columns: list, data: list[tuple]):
         """Insert data into the specified table in MySQL"""
         if not self.connection:
-            self.logger.error("No active database connection.")
+            logger.error("No active database connection.")
             return
 
         try:
@@ -72,9 +55,9 @@ class MySQLDatabase:
             )
             cursor.executemany(insert_query, data)
             self.connection.commit()
-            self.logger.info(f"{cursor.rowcount} rows inserted into {table}.")
+            logger.info(f"{cursor.rowcount} rows inserted into {table}.")
         except Error as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
             cursor.close()
 
@@ -83,19 +66,19 @@ class MySQLDatabase:
         Select data using a custom query and return the result
         """
         if not self.connection:
-            self.logger.error("No active database connection.")
+            logger.error("No active database connection.")
             return None
 
         try:
             cursor = self.connection.cursor()
             cursor.execute(query)
             result = cursor.fetchall()
-            self.logger.info(f"Query executed successfully: {query}")
-            self.logger.debug(f"Query result: {result}")
+            logger.info(f"Query executed successfully: {query}")
+            logger.debug(f"Query result: {result}")
             return result
         except Error as e:
-            self.logger.error(f"Failed to execute query: {query}")
-            self.logger.error(e)
+            logger.error(f"Failed to execute query: {query}")
+            logger.error(e)
             return None
         finally:
             cursor.close()
@@ -104,7 +87,7 @@ class MySQLDatabase:
         """Close the MySQL connection"""
         if self.connection:
             self.connection.close()
-            self.logger.info("MySQL connection closed.")
+            logger.info("MySQL connection closed.")
 
 
 if __name__ == "__main__":

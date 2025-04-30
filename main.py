@@ -120,6 +120,7 @@ async def check_new_messages():
     Check if there are any new messages. Return a list of (user_id, message) pairs.
     You can use the provided API of the website if available.
     """
+    raise NotImplementedError()
     new_messages = [
         ("user123", "Hello from user123!"),
         ("user456", "Hi, this is user456."),
@@ -156,8 +157,10 @@ async def message_monitor():
 @app.post("/llm")
 async def llm(payload: dict):
     """This endpoint generates a response."""
-    message = payload["message"]
-    return {"response": f"Echo: {message}"}
+    raise NotImplementedError()
+    chat_hist = payload["chat_hist"]
+    job_info = payload["job_info"]
+    return {"response": f"Echo: {chat_hist}|||{job_info}"}
 
 
 async def generate_response(message: str) -> str:
@@ -174,6 +177,7 @@ async def generate_response(message: str) -> str:
 # TODO: This is a mock function of sending response to the given user
 async def send_response(user_id: str, response: str):
     """Send the generated response to the user (mock function)."""
+    raise NotImplementedError()
     logger.info(f"[SEND] Responding to user {user_id}: {response}")
     return True
 

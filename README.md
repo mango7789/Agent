@@ -1,31 +1,47 @@
-## Agent
+<h2 style="text-align: center;">简历匹配</h2>
 
-### 数据表
+### 一. 数据表
+
+> 建立各个数据表的 SQL 代码在 `./database/resume.sql`
+
+#### 表具体信息
+- [爬虫](./doc/爬虫.md)
+- [匹配](./doc/匹配.md)
+- [问答](./doc/问答.md)
 
 #### ER 图
 
-![alt text](image/ER.svg)
+![](image/ER.svg)
 
-- 第一小组拥有对 `resume`, `project_experience`, `work_experience`, `job` 表的写权限
-- 第二小组拥有对 `score` 表的写权限
-- 第三小组拥有对 `chat_log` 和 `score` 表的写权限
 
-#### 需要解决的问题
-- 第二小组排序的时机如何选取，是否会对得到的分数进行重复排序？
-- 第三小组如何保证 `chat_log` 与实际聊天记录的一致性
-  - 正在生成回复，但是求职者又发了一条消息过来
-  - 不是我们筛选出的求职者主动联系我们的情况
+### 二. API
 
-#### 一些需要讨论的点
-- 个人信息（性别、年龄等等）爬出来无法区分，直接放一起存吧
-- 简历界面得到的电话和邮箱是图片格式，需要调用 OCR 进行识别
-- 可能需要自己注册一个号看看求职者求职时可以填写哪些信息
-- 期望薪资需不需要考虑进去呢
-- 公司信息我感觉没有太大的必要？这些应该是求职者来筛选的
-- 我们需不需要存爬虫任务的信息（参数、开始时间、结束时间、状态）
-
-### API
 #### 爬虫
+
+```bash
+python run_scraper.py -l location -a age
+```
+
 #### 监控/回复消息
+
+```python
+async def check_new_messages():
+	# 调用接口或者自己爬取
+    new_messages = [
+        ("user123", "Hello from user123!"),
+        ("user456", "Hi, this is user456."),
+    ]
+    return new_messages
+```
+```python
+@app.post("/llm")
+async def llm(payload: dict):
+	# 包含历史对话记录，岗位信息
+    chat_hist = payload["chat_hist"]
+	job_info = payload["job_info"]
+
+    return {"response": f"Echo: {chat_hist}|||{job_info}"}
+```
+
 #### 排序
 #### 生成回复/打分
