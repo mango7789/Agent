@@ -4,6 +4,7 @@ from MySQLdb import Error
 
 logger = logging.getLogger(__name__)
 
+
 class MySQLDatabase:
     def __init__(
         self,

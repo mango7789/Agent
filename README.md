@@ -26,7 +26,8 @@ python run_scraper.py -l location -a age
 
 ```python
 async def check_new_messages():
-	# 调用接口或者自己爬取
+	# 调用接口或者自己爬取，返回 List[tuple]，元组内是 (用户, 新消息)
+    # NOTE: 先假设一次只回一条吧，或者多条合并成一条
     new_messages = [
         ("user123", "Hello from user123!"),
         ("user456", "Hi, this is user456."),
@@ -44,4 +45,4 @@ async def llm(payload: dict):
 ```
 
 #### 排序
-#### 生成回复/打分
+#### 打分

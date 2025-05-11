@@ -1,0 +1,47 @@
+{
+  "resume": [
+    {
+      "resume_id": "8de19b659cedL951b50714c17",
+      "last_login": "2025/05/09",
+      "name": "刘先生",
+      "status": "离职，正在找工作",
+      "information": "男 22岁 上海本科 工作1年以下 8k · 13薪 视觉工程师 上海房馨科技有限公司",
+      "phone": "11111111111",
+      "email": "liu@example.com",
+      "expectation": "机器视觉上海-闵行区8-13k×13薪",
+      "education": "陕西理工大学·电子信息工程·本科 2020.10 - 2024.07 统招",
+      "certificate": "大学英语六级 大学英语四级",
+      "language": "英语商务洽谈CET6 普通话",
+      "skills": "半导体 机器学习 python 模电 数电 示波器 硬件",
+      "description": "熟悉支持向量机、LSTM 、随机森林等算法，有机器学习深度学习等方法项目经历。熟悉C语言程序编程linux嵌入式开发经验，具有良好的英语读写沟通能力。为人平和善良，对工作高度认真负责，吃苦耐劳，能胜任各种工作。",
+      "work_experience": [
+        {},
+        {},
+        {}
+      ],
+      "project_experience": [
+        {},
+        {},
+        {}
+      ],
+      "file": {
+
+      }
+    },
+    {
+      "resume_id": "类似上",
+      "last_login": "类似上",
+      "name": "类似上",
+      "status": "类似上",
+      "information": "类似上",
+      "phone": "类似上",
+      "email": "类似上",
+      "expectation": "类似上",
+      "education": "类似上",
+      "certificate": "类似上",
+      "language": "类似上",
+      "skills": "类似上",
+      "description": "类似上"
+    }
+  ]
+}

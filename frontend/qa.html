@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能问答对话框</title>
+    <style>
+        /* 基础样式 */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* 聊天容器 */
+        .chat-box {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+
+        /* 消息显示区域 */
+        .messages {
+            height: 60vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* 消息气泡通用样式 */
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 18px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        /* 用户消息（右侧） */
+        .user-message {
+            background: #1890ff;
+            color: white;
+            margin-left: auto;
+        }
+
+        /* 系统消息（左侧） */
+        .bot-message {
+            background: #f5f5f5;
+            color: #333;
+            margin-right: auto;
+        }
+
+        /* 加载动画 */
+        .typing-indicator {
+            display: inline-block;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 18px;
+        }
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 3px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* 输入区域 */
+        .input-area {
+            display: flex;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        #sendButton {
+            padding: 12px 24px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #sendButton:hover {
+            background: #096dd9;
+        }
+        #sendButton:disabled {
+            background: #91d5ff;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-box">
+        <!-- 消息显示区域 -->
+        <div class="messages" id="messageContainer">
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="输入您的问题..."
+                autocomplete="off"
+            >
+            <button type="button" id="sendButton" onclick="handleSend()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = async () => {
+            try {
+                const res = await fetch("/invitation", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user: "张三",
+                        job_info: "数据分析实习岗位"
+                    })
+                })
+
+                if (!res.ok) throw new Error(res.status)
+                const data = await res.json()
+                addMessage(data.response, 'bot')
+            } catch (error) {
+                console.error("获取初始消息失败:", error)
+                addMessage("欢迎使用，请输入您的问题。", 'bot')
+            }
+        }
+
+        // 处理发送操作
+        async function handleSend() {
+            const input = document.getElementById('messageInput')
+            const button = document.getElementById('sendButton')
+            const message = input.value.trim()
+            
+            if (!message) return
+            if (button.disabled) return
+
+            try {
+                // 禁用按钮防止重复发送
+                button.disabled = true
+                
+                // 添加用户消息
+                addMessage(message, 'user')
+                
+                // 显示加载状态
+                showLoading()
+                
+                // 调用API（示例使用fetch，实际需要替换为真实API）
+                const response = await callChatAPI(message)
+                
+                // 添加系统回复
+                addMessage(response, 'bot')
+            } catch (error) {
+                // 错误处理
+                addMessage(`服务暂时不可用，请稍后重试（错误代码：${error.message}）`, 'bot')
+                console.error('API调用失败:', error)
+            } finally {
+                // 重置状态
+                button.disabled = false
+                input.value = ''
+                input.focus()
+                hideLoading()
+            }
+        }
+
+        // 调用API示例
+        async function callChatAPI(message) {
+            const response = await fetch("/llm", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_hist: message,
+                    job_info: "岗位信息"
+                })
+            })
+
+            if (!response.ok) throw new Error(response.status)
+            const data = await response.json()
+            return data.response
+        }
+
+
+        // 添加消息到对话框
+        function addMessage(text, type) {
+            const container = document.getElementById('messageContainer')
+            
+            // 创建消息元素
+            const messageEl = document.createElement('div')
+            messageEl.className = `message-bubble ${type}-message`
+            
+            // 消息内容
+            const content = document.createElement('div')
+            content.textContent = text
+            
+            // 时间戳
+            const time = document.createElement('div')
+            time.className = 'message-time'
+            time.textContent = getFormattedTime() + (type === 'user' ? ' · 我' : ' · 系统')
+            
+            // 组合元素
+            messageEl.appendChild(content)
+            messageEl.appendChild(time)
+            
+            // 添加到容器
+            container.appendChild(messageEl)
+            
+            // 自动滚动到底部
+            container.scrollTop = container.scrollHeight
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            const container = document.getElementById('messageContainer')
+            const loader = document.createElement('div')
+            loader.className = 'typing-indicator'
+            loader.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `
+            container.appendChild(loader)
+            container.scrollTop = container.scrollHeight
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            const loaders = document.getElementsByClassName('typing-indicator')
+            if (loaders.length > 0) {
+                loaders[loaders.length - 1].remove()
+            }
+        }
+
+        // 获取格式化时间
+        function getFormattedTime() {
+            const now = new Date()
+            return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+        }
+
+        // 回车发送支持
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+            }
+        })
+    </script>
+</body>
+</html>

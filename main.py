@@ -4,6 +4,8 @@ from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from src.params import *
@@ -54,6 +56,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/chat")
+async def serve_home():
+    return FileResponse("frontend/qa.html")
 
 
 ###########################################################
@@ -153,14 +161,24 @@ async def message_monitor():
             break
 
 
+# TODO: This is a mock function of sending invitation to candidates
+@app.post("/invitation")
+async def invitation(payload: dict):
+    user = payload["user"]
+    job_info = payload["job_info"]
+    welcome_message = (
+        f"你好，{user}！欢迎了解岗位：{job_info}。请问我可以帮您解答什么问题？"
+    )
+    return {"response": welcome_message}
+
+
 # TODO: This is a mock function of generating response for given message
 @app.post("/llm")
 async def llm(payload: dict):
     """This endpoint generates a response."""
-    raise NotImplementedError()
     chat_hist = payload["chat_hist"]
     job_info = payload["job_info"]
-    return {"response": f"Echo: {chat_hist}|||{job_info}"}
+    return {"response": f"岗位信息: {job_info}\n历史记录：{chat_hist}"}
 
 
 async def generate_response(message: str) -> str:
