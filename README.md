@@ -26,7 +26,7 @@ python run_scraper.py -l location -a age
 
 ```python
 async def check_new_messages():
-	# 调用接口或者自己爬取，返回 List[tuple]，元组内是 (用户, 新消息)
+    # 调用接口或者自己爬取，返回 List[tuple]，元组内是 (用户, 新消息)
     # NOTE: 先假设一次只回一条吧，或者多条合并成一条
     new_messages = [
         ("user123", "Hello from user123!"),
@@ -37,7 +37,7 @@ async def check_new_messages():
 ```python
 @app.post("/llm")
 async def llm(payload: dict):
-	# 包含历史对话记录，岗位信息
+    # 包含历史对话记录，岗位信息
     chat_hist = payload["chat_hist"]
 	job_info = payload["job_info"]
 

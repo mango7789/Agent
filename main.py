@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 
 from src.params import *
 from src.logger import setup_logger, LOGGING_CONFIG
-from src.models import ScraperParams, MatcherParams
+from src.models import ScraperParams
 from src.database import MySQLDatabase
 from src.worker import start_rq_worker
 from src.scraper import run_scraper
@@ -56,12 +56,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/chat")
 async def serve_home():
-    return FileResponse("frontend/qa.html")
+    return FileResponse("static/qa.html")
 
 
 ###########################################################
@@ -95,7 +95,8 @@ async def scraper(scraper_params: ScraperParams):
     nsync_redis.set(job_id, "Pending")
     nsync_redis.rpush(
         SCRAPER_PENDING_TASKS_KEY,
-        f"{scraper_params.param1},{scraper_params.param2},{job_id}",
+        ",".join(str(value) for value in scraper_params.model_dump().values())
+        + f",{job_id}",
     )
 
     logger.info(
@@ -108,7 +109,7 @@ async def scraper(scraper_params: ScraperParams):
     }
 
 
-@app.get("/scraper_status/{job_id}")
+@app.get("/scraper/status/{job_id}")
 async def scraper_status(job_id: str):
     """Get the status of a scraper task."""
     status = nsync_redis.get(job_id)
@@ -227,8 +228,12 @@ async def process_message():
 ###########################################################
 
 
-@app.post("matcher")
-async def matcher(matcher_params: MatcherParams):
+@app.post("/matcher/{job_id}")
+async def matcher(job_id):
+    # TODO: Get a list of resumes from database
+
+    # TODO: Iterate through each resume, call API provided by group 2 
+    #       to get the match score
     pass
 
 
