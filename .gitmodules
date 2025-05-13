@@ -1,0 +1,3 @@
+[submodule "scraper"]
+	path = scraper
+	url = git@github.com:FYK2004/Crawling_project.git

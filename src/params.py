@@ -9,8 +9,8 @@ APP_PORT: Final = 8000
 REDIS_HOST: Final = "localhost"
 REDIS_POST: Final = 6379
 
-MYSQL_HOST: Final = "127.0.0.1"
-MYSQL_POST: Final = 3307
+MONGO_HOST: Final = "localhost"
+MONGO_POST: Final = 27017
 
 
 ###########################################################
@@ -30,10 +30,9 @@ SCRAPER_PENDING_TASKS_KEY: Final = "pending_scrapers"
 
 # Scraper parameters
 MAX_RUNNING_TASKS: Final = 3
-BATCH_SIZE: Final = 10
 
 # Paths for scraper scripts and logs
-SCRAPER_SCRIPT: Final = "run_scraper.py"
+SCRAPER_SCRIPT: Final = "scraper/main.py"
 SCRAPER_LOG_DIR: Final = "logs/scraper"
 
 

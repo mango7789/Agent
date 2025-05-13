@@ -1,48 +1,17 @@
 <h2 style="text-align: center;">简历匹配</h2>
 
-### 一. 数据表
+### 数据表
 
-> 建立各个数据表的 SQL 代码在 `./database/resume.sql`
+- 参考 `template/` 下文件，现在使用 mongodb 作为数据库，备份在 `~/data/mongodb/backup` 下
+- 主要包含
+  - 简历表 (`resume.json`)
+  - 岗位表 (`job.json`)
+  - 打分表 (`score.json`)
+  - 对话记录表 (`chat.json`)
+  - 爬虫任务表 (`task.json`)
+- 需要将各部分的输入输出与模板表对齐
 
-#### 表具体信息
-- [爬虫](./doc/爬虫.md)
-- [匹配](./doc/匹配.md)
-- [问答](./doc/问答.md)
-
-#### ER 图
-
-![](image/ER.svg)
-
-
-### 二. API
-
-#### 爬虫
-
+### 运行项目
 ```bash
-python run_scraper.py -l location -a age
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
-
-#### 监控/回复消息
-
-```python
-async def check_new_messages():
-    # 调用接口或者自己爬取，返回 List[tuple]，元组内是 (用户, 新消息)
-    # NOTE: 先假设一次只回一条吧，或者多条合并成一条
-    new_messages = [
-        ("user123", "Hello from user123!"),
-        ("user456", "Hi, this is user456."),
-    ]
-    return new_messages
-```
-```python
-@app.post("/llm")
-async def llm(payload: dict):
-    # 包含历史对话记录，岗位信息
-    chat_hist = payload["chat_hist"]
-	job_info = payload["job_info"]
-
-    return {"response": f"Echo: {chat_hist}|||{job_info}"}
-```
-
-#### 排序
-#### 打分

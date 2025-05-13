@@ -3,17 +3,17 @@ import httpx, uvicorn
 from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from src.params import *
 from src.logger import setup_logger, LOGGING_CONFIG
-from src.models import ScraperParams
-from src.database import MySQLDatabase
+from src.database import MongoDBDatabase
 from src.worker import start_rq_worker
 from src.scraper import run_scraper
+from src.utils import get_curr_str_time
 
 
 ###########################################################
@@ -32,7 +32,7 @@ setup_logger()
 logger = logging.getLogger(__name__)
 
 # Database connection
-mysql_db = MySQLDatabase()
+mongo_db = MongoDBDatabase()
 
 
 # TODO: Establish a session with the website
@@ -41,6 +41,8 @@ mysql_db = MySQLDatabase()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage startup and shutdown events."""
+    # Create connection with db
+    mongo_db.create_connection()
     # Create background tasks
     # asyncio.create_task(start_rq_worker())
     asyncio.create_task(scraper_scheduler())
@@ -53,6 +55,8 @@ async def lifespan(app: FastAPI):
     tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
     for task in tasks:
         task.cancel()
+    # Close connection with db
+    mongo_db.close_connection()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -76,12 +80,11 @@ async def scraper_scheduler():
     while True:
         running = int(nsync_redis.get(SCRAPER_RUNNING_TASKS_KEY) or 0)
         if running < MAX_RUNNING_TASKS:
-            task_data = nsync_redis.lpop(SCRAPER_PENDING_TASKS_KEY)
-            if task_data:
-                param1, param2, job_id = task_data.split(",")
+            task_id = nsync_redis.lpop(SCRAPER_PENDING_TASKS_KEY)
+            if task_id:
                 nsync_redis.incr(SCRAPER_RUNNING_TASKS_KEY)
-                scraper_queue.enqueue(run_scraper, param1, param2, job_id)
-                logger.info(f"Scheduled pending task {job_id}")
+                scraper_queue.enqueue(run_scraper, task_id)
+                logger.info(f"Scheduled pending task {task_id}")
 
         await asyncio.sleep(10)
         if asyncio.current_task().cancelled():
@@ -89,33 +92,36 @@ async def scraper_scheduler():
 
 
 @app.post("/scraper")
-async def scraper(scraper_params: ScraperParams):
+async def scraper(request: Request):
     """Submit a new scraper task."""
-    job_id = str(uuid.uuid4())
-    nsync_redis.set(job_id, "Pending")
-    nsync_redis.rpush(
-        SCRAPER_PENDING_TASKS_KEY,
-        ",".join(str(value) for value in scraper_params.model_dump().values())
-        + f",{job_id}",
-    )
+    param_dict = await request.json()
 
-    logger.info(
-        f"Task {job_id} enqueued with params {scraper_params.param1}, {scraper_params.param2}"
-    )
+    # Generate job_id, push the task into redis
+    task_id = str(uuid.uuid4())
+    nsync_redis.set(task_id, "Pending")
+    nsync_redis.rpush(SCRAPER_PENDING_TASKS_KEY, task_id)
+
+    # Insert task record into database
+    param_dict["task_id"] = task_id
+    param_dict["status"] = "Pending"
+    param_dict["created_at"] = get_curr_str_time()
+    mongo_db.insert_data("task", param_dict)
+
+    logger.info(f"Task {task_id} enqueued successfully!")
 
     return {
         "message": "Task is queued and will start automatically when possible.",
-        "job_id": job_id,
+        "task_id": task_id,
     }
 
 
-@app.get("/scraper/status/{job_id}")
-async def scraper_status(job_id: str):
+@app.get("/scraper/status/{task_id}")
+async def scraper_status(task_id: str):
     """Get the status of a scraper task."""
-    status = nsync_redis.get(job_id)
+    status = nsync_redis.get(task_id)
     if status is None:
         return {"status": "None", "message": "Task not found."}
-    return {"status": status, "job_id": job_id}
+    return {"status": status, "task_id": task_id}
 
 
 ###########################################################
