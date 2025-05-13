@@ -2,7 +2,7 @@ import os
 import logging
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import DuplicateKeyError, OperationFailure
-from .params import MONGO_HOST, MONGO_POST
+from .params import MONGO_HOST, MONGO_POST, DB_NAME
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ class MongoDBDatabase:
     def __init__(
         self,
         host: str = MONGO_HOST,
-        database: str = "CV_RESUME",
+        database: str = DB_NAME,
         port: int = MONGO_POST,
         debug: bool = False,
     ):

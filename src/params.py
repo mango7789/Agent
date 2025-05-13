@@ -1,4 +1,6 @@
+from enum import Enum
 from typing import Final
+
 
 ###########################################################
 #                    Infrastructure                       #
@@ -11,6 +13,16 @@ REDIS_POST: Final = 6379
 
 MONGO_HOST: Final = "localhost"
 MONGO_POST: Final = 27017
+
+DB_NAME: Final = "CV_RESUME"
+
+
+class TABLE(Enum):
+    RESUME = "resume"
+    JOB = "job"
+    SCORE = "score"
+    CHAT = "chat"
+    TASK = "task"
 
 
 ###########################################################
@@ -32,7 +44,7 @@ SCRAPER_PENDING_TASKS_KEY: Final = "pending_scrapers"
 MAX_RUNNING_TASKS: Final = 3
 
 # Paths for scraper scripts and logs
-SCRAPER_SCRIPT: Final = "scraper/main.py"
+SCRAPER_DIR: Final = "scraper"
 SCRAPER_LOG_DIR: Final = "logs/scraper"
 
 

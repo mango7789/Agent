@@ -105,7 +105,7 @@ async def scraper(request: Request):
     param_dict["task_id"] = task_id
     param_dict["status"] = "Pending"
     param_dict["created_at"] = get_curr_str_time()
-    mongo_db.insert_data("task", param_dict)
+    mongo_db.insert_data(TABLE.TASK.value, param_dict)
 
     logger.info(f"Task {task_id} enqueued successfully!")
 
