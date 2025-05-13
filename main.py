@@ -232,7 +232,7 @@ async def process_message():
 async def matcher(job_id):
     # TODO: Get a list of resumes from database
 
-    # TODO: Iterate through each resume, call API provided by group 2 
+    # TODO: Iterate through each resume, call API provided by group 2
     #       to get the match score
     pass
 
