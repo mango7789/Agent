@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>岗位信息筛选</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .search-bar {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #1e88e5;
+        }
+
+        .search-button {
+            padding: 0 24px;
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .search-button:hover {
+            background-color: #1565c0;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-tag {
+            padding: 6px 12px;
+            background-color: #f0f7ff;
+            color: #1e88e5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-tag:hover {
+            background-color: #1e88e5;
+            color: white;
+        }
+
+        .filter-tag.active {
+            background-color: #1e88e5;
+            color: white;
+        }
+
+        .content-area {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 18px;
+            border: 1px dashed #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 搜索栏 -->
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="输入职位、公司或关键词">
+            <button class="search-button">搜索</button>
+        </div>
+
+        <!-- 筛选标签区域 -->
+        <div class="filter-section">
+            <div class="filter-title">职位类型</div>
+            <div class="filter-tags" id="jobTypeTags">
+                <!-- 职位类型标签将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">地区</div>
+            <div class="filter-tags" id="locationTags">
+                <!-- 地区标签将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">薪资范围</div>
+            <div class="filter-tags" id="salaryTags">
+                <!-- 薪资标签将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="content-area">
+            这里是职位列表展示区域（待实现）
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 职位类型数据
+            const jobTypes = [
+                'IT/互联网', '算法工程师', '前端开发', '后端开发',
+                '产品经理', 'UI设计师', '测试工程师', '数据分析师',
+                '人工智能', '大数据', '运维工程师', '全栈开发'
+            ];
+
+            // 地区数据
+            const locations = [
+                '北京', '上海', '广州', '深圳', '杭州', '成都',
+                '武汉', '南京', '西安', '长沙', '苏州', '重庆'
+            ];
+
+            // 薪资范围数据
+            const salaries = [
+                '5k以下', '5k-10k', '10k-15k', '15k-20k',
+                '20k-25k', '25k-30k', '30k-50k', '50k以上'
+            ];
+
+            // 生成标签函数
+            function generateTags(data, containerId) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+
+                data.forEach(item => {
+                    const tag = document.createElement('div');
+                    tag.className = 'filter-tag';
+                    tag.textContent = item;
+                    tag.addEventListener('click', function () {
+                        this.classList.toggle('active');
+                        // 这里可以添加筛选逻辑
+                        console.log(`筛选条件: ${item}`);
+                    });
+                    container.appendChild(tag);
+                });
+            }
+
+            // 生成所有标签
+            generateTags(jobTypes, 'jobTypeTags');
+            generateTags(locations, 'locationTags');
+            generateTags(salaries, 'salaryTags');
+
+            // 搜索按钮点击事件
+            document.querySelector('.search-button').addEventListener('click', function () {
+                const keyword = document.querySelector('.search-input').value.trim();
+                if (keyword) {
+                    console.log(`搜索关键词: ${keyword}`);
+                    // 这里可以添加搜索逻辑
+                }
+            });
+
+            // 回车键触发搜索
+            document.querySelector('.search-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.querySelector('.search-button').click();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

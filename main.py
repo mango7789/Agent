@@ -4,8 +4,7 @@ from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 
 from src.params import *
@@ -60,12 +59,32 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+###########################################################
+#                      Front End                          #
+###########################################################
 
 
 @app.get("/chat")
-async def serve_home():
-    return FileResponse("static/qa.html")
+async def serve_chat(request: Request):
+    return templates.TemplateResponse("/qa.html", {"request": request})
+
+
+@app.get("/main")
+async def serve_main(request: Request):
+    resume_list = mongo_db.select_data("resume")
+    job_list = mongo_db.select_data("job")
+    task_list = mongo_db.select_data("task")
+    return templates.TemplateResponse(
+        "/main.html",
+        {
+            "request": request,
+            "resumes": resume_list,
+            "jobs": job_list,
+            "tasks": task_list,
+        },
+    )
 
 
 ###########################################################

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猎鹰 - 专业猎头服务</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1a237e;
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffc107;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            background-color: #ffc107;
+            color: #1a237e;
+            font-weight: bold;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #ffc107;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #ffc107;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a237e;
+            font-weight: bold;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            padding: 30px;
+            min-height: calc(100vh - 70px);
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #1a237e;
+            border-bottom: 2px solid #ffc107;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .page-content {
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">猎鹰</div>
+
+        <div class="nav-links">
+            <a href="#" class="nav-link active" data-page="home">首页</a>
+            <a href="#" class="nav-link" data-page="communication">沟通</a>
+            <a href="#" class="nav-link" data-page="find-people">找人</a>
+            <a href="#" class="nav-link" data-page="positions">职位</a>
+            <a href="#" class="nav-link" data-page="services">猎头服务</a>
+        </div>
+
+        <div class="user-profile">
+            <div class="user-avatar">用户</div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 首页 -->
+        <div class="page active" id="home">
+            <h1 class="page-title">欢迎来到猎鹰</h1>
+            <div class="page-content">
+                <p>猎鹰是国内领先的专业猎头服务平台，致力于为企业寻找最合适的高端人才，为人才提供最佳的职业发展机会。</p>
+                <p>我们拥有庞大的行业数据库和专业的猎头团队，能够快速精准地匹配人才与职位需求。</p>
+            </div>
+            <h1>简历列表</h1>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>状态</th>
+                        <th>基本信息</th>
+                        <th>电话</th>
+                        <th>邮箱</th>
+                        <th>求职期望</th>
+                        <th>教育背景</th>
+                        <th>证书</th>
+                        <th>语言能力</th>
+                        <th>技能</th>
+                        <th>自我评价</th>
+                        <th>工作经历</th>
+                        <th>项目经验</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resume in resumes %}
+                    <tr>
+                        <td>{{ resume.name }}</td>
+                        <td>{{ resume.status }}</td>
+                        <td>{{ resume.information }}</td>
+                        <td>{{ resume.phone }}</td>
+                        <td>{{ resume.email }}</td>
+                        <td>
+                            {% for item in resume.expectation %}
+                            {{ item }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for item in resume.education %}
+                            {{ item }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for item in resume.certificate %}
+                            {{ item }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for lang in resume.language %}
+                            {% for key, value in lang.items() %}
+                            {{ key }}{% if value %}：{{ value|join('，') }}{% endif %}<br>
+                            {% endfor %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ resume.skills|join('，') }}</td>
+                        <td>{{ resume.self_assessment }}</td>
+                        <td>
+                            {% if resume.work_experience %}
+                            {% for item in resume.work_experience %}
+                            {{ item }}<br>
+                            {% endfor %}
+                            {% else %}
+                            无
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if resume.project_experience %}
+                            {% for item in resume.project_experience %}
+                            {{ item }}<br>
+                            {% endfor %}
+                            {% else %}
+                            无
+                            {% endif %}
+                        </td>
+                        <td>{{ resume.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 沟通页面 -->
+        <div class="page" id="communication">
+            <h1 class="page-title">沟通</h1>
+            <div class="page-content">
+                <p>这里是您的沟通中心，您可以查看和管理所有与候选人、客户的沟通记录。</p>
+                <p>功能包括：消息列表、即时聊天、面试安排、反馈收集等。</p>
+            </div>
+        </div>
+
+        <!-- 找人页面 -->
+        <div class="page" id="find-people">
+            <h1 class="page-title">找人</h1>
+            <div class="page-content">
+                <p>使用我们强大的人才搜索引擎，快速找到符合要求的候选人。</p>
+                <p>支持按行业、职位、技能、工作经验等多维度筛选人才。</p>
+            </div>
+        </div>
+
+        <!-- 职位页面 -->
+        <div class="page" id="positions">
+            <h1 class="page-title">职位管理</h1>
+            <div class="page-content">
+                <p>查看和管理所有职位信息，包括职位发布、候选人推荐、面试进度跟踪等。</p>
+                <p>您可以在这里创建新职位、更新职位状态、查看职位分析报告。</p>
+            </div>
+        </div>
+
+        <!-- 猎头服务页面 -->
+        <div class="page" id="services">
+            <h1 class="page-title">猎头服务</h1>
+            <div class="page-content">
+                <p>我们提供全方位的猎头服务，包括：</p>
+                <ul>
+                    <li>高端人才寻访</li>
+                    <li>行业人才Mapping</li>
+                    <li>薪酬调研与分析</li>
+                    <li>人才评估与背调</li>
+                    <li>招聘流程外包(RPO)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面切换功能
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // 移除所有导航链接的active类
+                    navLinks.forEach(navLink => {
+                        navLink.classList.remove('active');
+                    });
+
+                    // 给当前点击的链接添加active类
+                    this.classList.add('active');
+
+                    // 获取目标页面ID
+                    const targetPage = this.getAttribute('data-page');
+
+                    // 隐藏所有页面
+                    pages.forEach(page => {
+                        page.classList.remove('active');
+                    });
+
+                    // 显示目标页面
+                    document.getElementById(targetPage).classList.add('active');
+                });
+            });
+
+            // 用户头像点击事件（可以扩展为显示用户菜单）
+            const userProfile = document.querySelector('.user-profile');
+            userProfile.addEventListener('click', function () {
+                alert('这里是用户个人中心，可以显示用户菜单或跳转到个人资料页面');
+            });
+        });
+    </script>
+</body>
+
+</html>
