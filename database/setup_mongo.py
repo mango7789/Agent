@@ -6,7 +6,7 @@ from pymongo.errors import DuplicateKeyError
 
 from src.utils import get_curr_str_time
 
-TEMPLATE_DIR = Path("./template")
+DATABASE_DIR = Path("./database")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
@@ -45,19 +45,19 @@ if __name__ == "__main__":
     db.drop_collection("chat")
 
     # Load template jsons
-    with open(TEMPLATE_DIR / "resume.json", encoding="utf-8") as f:
+    with open(DATABASE_DIR / "resume.json", encoding="utf-8") as f:
         resume = json.load(f)
 
-    with open(TEMPLATE_DIR / "job.json", encoding="utf-8") as f:
+    with open(DATABASE_DIR / "job.json", encoding="utf-8") as f:
         job = json.load(f)
 
-    with open(TEMPLATE_DIR / "task.json", encoding="utf-8") as f:
+    with open(DATABASE_DIR / "task.json", encoding="utf-8") as f:
         task = json.load(f)
 
-    with open(TEMPLATE_DIR / "score.json", encoding="utf-8") as f:
+    with open(DATABASE_DIR / "score.json", encoding="utf-8") as f:
         score = json.load(f)
 
-    with open(TEMPLATE_DIR / "chat.json", encoding="utf-8") as f:
+    with open(DATABASE_DIR / "chat.json", encoding="utf-8") as f:
         chat = json.load(f)
 
     # Insert template data into MongoDB
