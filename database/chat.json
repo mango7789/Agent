@@ -3,15 +3,18 @@
     "chat_hist": [
         {
             "sender": "system",
-            "content": "你好"
+            "content": "你好",
+            "time": "2025-05-17 10:30:45"
         },
         {
             "sender": "user",
-            "content": "你好"
+            "content": "你好",
+            "time": "2025-05-17 10:30:50"
         },
         {
             "sender": "system",
-            "content": "请问你在考虑数据分析岗位吗"
+            "content": "请问你在考虑数据分析岗位吗",
+            "time": "2025-05-17 10:30:55"
         }
     ],
     "created_at": "2025-05-13 17:30:45"

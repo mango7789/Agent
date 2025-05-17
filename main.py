@@ -1,11 +1,13 @@
-import os, uuid, asyncio, logging
+import os, sys, uuid, asyncio, logging
 import httpx, uvicorn
 from rq import Queue
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from fastapi import FastAPI, Request
+from fastapi import BackgroundTasks, HTTPException
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
+from bson.objectid import ObjectId
 
 from src.params import *
 from src.logger import setup_logger, LOGGING_CONFIG
@@ -14,6 +16,11 @@ from src.worker import start_rq_worker
 from src.scraper import run_scraper
 from src.utils import get_curr_str_time
 
+
+sys.path.append("/home/resume")
+
+from match.job_resume_match import ResumeJobMatcher
+from AIChat.AIChat import SendInvitation, GetResponse
 
 ###########################################################
 #                   Initialization                        #
@@ -60,6 +67,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
+
 
 ###########################################################
 #                      Front End                          #
@@ -190,21 +198,26 @@ async def message_monitor():
 # TODO: This is a mock function of sending invitation to candidates
 @app.post("/invitation")
 async def invitation(payload: dict):
-    user = payload["user"]
-    job_info = payload["job_info"]
-    welcome_message = (
-        f"你好，{user}！欢迎了解岗位：{job_info}。请问我可以帮您解答什么问题？"
-    )
-    return {"response": welcome_message}
+    resume_id = payload["resume_id"]
+    job_id = ObjectId(payload["job_id"])
+    resume = mongo_db.select_data("resume", {"resume_id": resume_id})[0]
+    job = mongo_db.select_data("job", {"_id": job_id})[0]
+
+    response = SendInvitation(resume, job)
+    return {"response": response}
 
 
 # TODO: This is a mock function of generating response for given message
 @app.post("/llm")
 async def llm(payload: dict):
-    """This endpoint generates a response."""
-    chat_hist = payload["chat_hist"]
-    job_info = payload["job_info"]
-    return {"response": f"岗位信息: {job_info}\n历史记录：{chat_hist}"}
+    message = payload["message"]
+    resume_id = payload["resume_id"]
+    job_id = ObjectId(payload["job_id"])
+    chat = mongo_db.select_data("chat", {"resume_id": resume_id})[0]
+    job = mongo_db.select_data("job", {"_id": job_id})[0]
+
+    response = GetResponse(message, chat, job)
+    return {"response": response}
 
 
 async def generate_response(message: str) -> str:
@@ -228,6 +241,7 @@ async def send_response(user_id: str, response: str):
 
 async def process_message():
     """Background worker that listens for new messages and processes them."""
+    # TODO: Handle the storage of message and reponse here!
     logger.info("Message worker started...")
     while True:
         data = await async_redis.blpop(MESSAGE_QUEUE_KEY, timeout=0)
@@ -254,12 +268,41 @@ async def process_message():
 
 
 @app.post("/matcher/{job_id}")
-async def matcher(job_id):
-    # TODO: Get a list of resumes from database
+async def matcher(job_id: str, background_tasks: BackgroundTasks):
+    try:
+        job_oid = ObjectId(job_id)
+    except Exception:
+        logger.error("Get invalid job_id")
+        raise HTTPException(status_code=400, detail="Invalid job_id")
 
-    # TODO: Iterate through each resume, call API provided by group 2
-    #       to get the match score
-    pass
+    background_tasks.add_task(run_matcher_task, job_oid)
+    return {"status": "accepted", "detail": "Matcher started in background"}
+
+
+def run_matcher_task(job_id: ObjectId):
+    job = mongo_db.select_data("job", {"_id": job_id})
+    if not job:
+        logger.error(f"Can't find corresponding job for job_id {job_id}")
+        return
+    job = job[0]
+    resume_list = mongo_db.select_data("resume")
+
+    resume_job_matcher = ResumeJobMatcher()
+
+    for resume in resume_list:
+        logger.info(
+            f"Start matching for job_id {job_id} and resume_id {resume['resume_id']}..."
+        )
+        score = resume_job_matcher.evaluate_match(resume, job)
+        score["job_id"] = job_id
+        score["answers"] = []
+        score["final_score"] = -1
+        score["status"] = "evaluated"
+        score["updated_at"] = get_curr_str_time()
+        mongo_db.insert_data("score", score)
+        logger.info(
+            f"Finish match for job_id {job_id} and resume_id {resume['resume_id']}, initial score is {score['initial_score']:>4.1f}."
+        )
 
 
 if __name__ == "__main__":
